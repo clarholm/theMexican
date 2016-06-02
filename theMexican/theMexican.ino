@@ -30,7 +30,7 @@
 //Add the SdFat Libraries
 #include <SdFat.h>
 #include <SdFatUtil.h>
-
+#include <Bounce2.h> 
 //and the MP3 Shield Library
 #include <SFEMP3Shield.h>
 SdFat sd; // Create object to handle SD functions
@@ -40,24 +40,39 @@ SFEMP3Shield MP3player; // Create Mp3 library object
 // some stereo options:
 const uint8_t volume = 0; // MP3 Player volume 0=max, 255=lowest (off)
 const uint16_t monoMode = 1;  // Mono setting 0=off, 3=max
-
+#define BUTTON_DEBOUNCE_PERIOD 20 //ms
 /* Pin setup */
 #define TRIGGER_COUNT 2
-int triggerPins[TRIGGER_COUNT] = {A0, A4};
-int stopPin = A5; // This pin triggers a track stop.
+int TRIGGERSWITCH = A0;
+int RANDOMSWITCH = A4;
+int STOPPIN = A5; // This pin triggers a track stop.
+int noOfSamples = 6;
+int trackToPlay = 0;
+Bounce triggerSwitch  = Bounce();
+Bounce randomSwitch  = Bounce();
+Bounce stopSwitch  = Bounce();
 
 void setup()
 {
+  randomSeed(analogRead(A1));
   Serial.begin(115200);
+  
   /* Set up all trigger pins as inputs, with pull-ups activated: */
-  for (int i=0; i<TRIGGER_COUNT; i++)
-  {
-    pinMode(triggerPins[i], INPUT_PULLUP);
-  }
-  pinMode(stopPin, INPUT_PULLUP);
+  pinMode(TRIGGERSWITCH, INPUT_PULLUP);
+  pinMode(RANDOMSWITCH, INPUT_PULLUP);
+  pinMode(STOPPIN, INPUT_PULLUP);
+  
+  triggerSwitch.attach(TRIGGERSWITCH);
+  triggerSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
+  randomSwitch.attach(RANDOMSWITCH);
+  randomSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
+  stopSwitch.attach(STOPPIN);
+  stopSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
+  
   Serial.println("Pins setup" );
   initSD();  // Initialize the SD card
   initMP3Player(); // Initialize the MP3 Shield
+  
 }
 
 // All the loop does is continuously step through the trigger
@@ -65,22 +80,28 @@ void setup()
 //  currently playing track, and start playing a new one.
 void loop()
 {
-  
-  for (int i=0; i<TRIGGER_COUNT; i++)
-  {
-
-      
-    if (digitalRead(A0) == HIGH)
+   if (triggerSwitch.update()) {   
+    if (triggerSwitch.read() == HIGH)
     {
+      if (triggerSwitch.update()) {
+      if (randomSwitch.read() == HIGH){
       int val = analogRead(A3);
-      val = map(val, 0, 1023, 1, 10);
+      val = map(val, 0, 1023, 1, noOfSamples);
       Serial.print("Analog read: " );
       Serial.println(val);
+      trackToPlay = val;
+      }
+      }
+      else {
+      trackToPlay = random(1, noOfSamples);
+      Serial.print("Random number: " );
+      Serial.println(trackToPlay);
+      }
       if (MP3player.isPlaying())
         MP3player.stopTrack();
       
       /* Use the playTrack function to play a numbered track: */
-      uint8_t result = MP3player.playTrack(val);
+      uint8_t result = MP3player.playTrack(trackToPlay);
       // An alternative here would be to use the
       //  playMP3(fileName) function, as long as you mapped
       //  the file names to trigger pins.
@@ -97,14 +118,15 @@ void loop()
   }
   // After looping through and checking trigger pins, check to
   //  see if the stopPin (A5) is triggered.
-  if (digitalRead(stopPin) == LOW)
+  if (stopSwitch.update()) {
+  if (stopSwitch.read()  == LOW)
   {
     // If another track is playing, stop it.
     if (MP3player.isPlaying())
       MP3player.stopTrack();
   }
 }
-
+}
 // initSD() initializes the SD card and checks for an error.
 void initSD()
 {
