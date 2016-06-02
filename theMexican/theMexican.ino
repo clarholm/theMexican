@@ -80,6 +80,14 @@ void setup()
 //  currently playing track, and start playing a new one.
 void loop()
 {
+      int vol = analogRead(A2);
+      Serial.print("Vol: " );
+      Serial.println(vol);
+      int volToSet = map(vol, 0, 1023, 1, 255);
+      Serial.print("Volume: " );
+      Serial.println(volToSet);
+      MP3player.setVolume(volToSet, volToSet);
+      
    if (triggerSwitch.update()) {   
     if (triggerSwitch.read() == HIGH)
     {
