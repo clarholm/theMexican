@@ -42,11 +42,9 @@ const uint8_t volume = 0; // MP3 Player volume 0=max, 255=lowest (off)
 const uint16_t monoMode = 1;  // Mono setting 0=off, 3=max
 
 /* Pin setup */
-#define TRIGGER_COUNT 3
-//int triggerPins[TRIGGER_COUNT] = {5, 10, A0, A1, A2, A3, A4};
-int triggerPins[TRIGGER_COUNT] = {A0};
+#define TRIGGER_COUNT 2
+int triggerPins[TRIGGER_COUNT] = {A0, A4};
 int stopPin = A5; // This pin triggers a track stop.
-int lastTrigger = 0; // This variable keeps track of which tune is playing
 
 void setup()
 {
@@ -70,22 +68,19 @@ void loop()
   
   for (int i=0; i<TRIGGER_COUNT; i++)
   {
+
+      
+    if (digitalRead(A0) == HIGH)
+    {
       int val = analogRead(A3);
-      val = map(val, 0, 1023, 0, 10);
+      val = map(val, 0, 1023, 1, 10);
       Serial.print("Analog read: " );
       Serial.println(val);
-      
-    if ((digitalRead(triggerPins[i]) == HIGH) && ((i+1) != lastTrigger))
-    {
-      Serial.print("Pin triggered: " );
-      Serial.println(i);
-      lastTrigger = i+1; // Update lastTrigger variable to current trigger
-      /* If another track is playing, stop it: */
       if (MP3player.isPlaying())
         MP3player.stopTrack();
       
       /* Use the playTrack function to play a numbered track: */
-      uint8_t result = MP3player.playTrack(lastTrigger);
+      uint8_t result = MP3player.playTrack(val);
       // An alternative here would be to use the
       //  playMP3(fileName) function, as long as you mapped
       //  the file names to trigger pins.
@@ -104,7 +99,6 @@ void loop()
   //  see if the stopPin (A5) is triggered.
   if (digitalRead(stopPin) == LOW)
   {
-    lastTrigger = 0; // Reset lastTrigger
     // If another track is playing, stop it.
     if (MP3player.isPlaying())
       MP3player.stopTrack();
