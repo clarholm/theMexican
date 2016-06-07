@@ -48,6 +48,8 @@ int RANDOMSWITCH = A4;
 int STOPPIN = A5; // This pin triggers a track stop.
 int noOfSamples = 6;
 int trackToPlay = 0;
+int currentVol = 0;
+int currentBank=0;
 Bounce triggerSwitch  = Bounce();
 Bounce randomSwitch  = Bounce();
 Bounce stopSwitch  = Bounce();
@@ -64,8 +66,8 @@ void setup()
   
   triggerSwitch.attach(TRIGGERSWITCH);
   triggerSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
-  randomSwitch.attach(RANDOMSWITCH);
-  randomSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
+  //randomSwitch.attach(RANDOMSWITCH);
+  //randomSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
   stopSwitch.attach(STOPPIN);
   stopSwitch.interval(BUTTON_DEBOUNCE_PERIOD);
   
@@ -80,25 +82,34 @@ void setup()
 //  currently playing track, and start playing a new one.
 void loop()
 {
-      int vol = analogRead(A2);
-      Serial.print("Vol: " );
-      Serial.println(vol);
-      int volToSet = map(vol, 0, 1023, 1, 255);
+      int vol = analogRead(A1);
+      int volToSet = map(vol, 0, 1023, 0, 140);
+      int bankPot = analogRead(A2);
+        Serial.print("Bank pot: " );
+      Serial.println(bankPot);
+      
+      int bank = map(bankPot, 0, 1023, 1, 10);
+      Serial.print("Bank: " );
+      Serial.println(bank);
+      
+      if (volToSet < (currentVol-1) || volToSet > (currentVol+1)){
+      MP3player.setVolume(volToSet, volToSet);
+      currentVol=volToSet;
       Serial.print("Volume: " );
       Serial.println(volToSet);
-      MP3player.setVolume(volToSet, volToSet);
+      }
       
    if (triggerSwitch.update()) {   
     if (triggerSwitch.read() == HIGH)
     {
-      if (triggerSwitch.update()) {
-      if (randomSwitch.read() == HIGH){
+      
+      if (digitalRead(RANDOMSWITCH) == HIGH){
       int val = analogRead(A3);
       val = map(val, 0, 1023, 1, noOfSamples);
       Serial.print("Analog read: " );
       Serial.println(val);
       trackToPlay = val;
-      }
+      
       }
       else {
       trackToPlay = random(1, noOfSamples);
@@ -127,8 +138,9 @@ void loop()
   // After looping through and checking trigger pins, check to
   //  see if the stopPin (A5) is triggered.
   if (stopSwitch.update()) {
-  if (stopSwitch.read()  == LOW)
+  if (stopSwitch.read() == LOW)
   {
+    Serial.println("Stop strack." );
     // If another track is playing, stop it.
     if (MP3player.isPlaying())
       MP3player.stopTrack();
