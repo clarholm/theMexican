@@ -46,10 +46,10 @@ const uint16_t monoMode = 1;  // Mono setting 0=off, 3=max
 int TRIGGERSWITCH = A0;
 int RANDOMSWITCH = A4;
 int STOPPIN = A5; // This pin triggers a track stop.
-int noOfSamples = 6;
+int noOfSamples = 10;
 int trackToPlay = 0;
 int currentVol = 0;
-int currentBank=0;
+int bank = 0;
 Bounce triggerSwitch  = Bounce();
 Bounce randomSwitch  = Bounce();
 Bounce stopSwitch  = Bounce();
@@ -84,13 +84,7 @@ void loop()
 {
       int vol = analogRead(A1);
       int volToSet = map(vol, 0, 1023, 0, 140);
-      int bankPot = analogRead(A2);
-        Serial.print("Bank pot: " );
-      Serial.println(bankPot);
-      
-      int bank = map(bankPot, 0, 1023, 1, 10);
-      Serial.print("Bank: " );
-      Serial.println(bank);
+
       
       if (volToSet < (currentVol-1) || volToSet > (currentVol+1)){
       MP3player.setVolume(volToSet, volToSet);
@@ -102,37 +96,12 @@ void loop()
    if (triggerSwitch.update()) {   
     if (triggerSwitch.read() == HIGH)
     {
+
       
-      if (digitalRead(RANDOMSWITCH) == HIGH){
-      int val = analogRead(A3);
-      val = map(val, 0, 1023, 1, noOfSamples);
-      Serial.print("Analog read: " );
-      Serial.println(val);
-      trackToPlay = val;
+      setTrackToPlay();
+      playTrack();
       
-      }
-      else {
-      trackToPlay = random(1, noOfSamples);
-      Serial.print("Random number: " );
-      Serial.println(trackToPlay);
-      }
-      if (MP3player.isPlaying())
-        MP3player.stopTrack();
-      
-      /* Use the playTrack function to play a numbered track: */
-      uint8_t result = MP3player.playTrack(trackToPlay);
-      // An alternative here would be to use the
-      //  playMP3(fileName) function, as long as you mapped
-      //  the file names to trigger pins.
-      
-      if (result == 0)  // playTrack() returns 0 on success
-      {
-        Serial.println("Playing" );
-      }
-      else // Otherwise there's an error, check the code
-      {
-        Serial.println("could not play." );
-      }
+    
     }
   }
   // After looping through and checking trigger pins, check to
@@ -171,3 +140,57 @@ void initMP3Player()
   MP3player.setVolume(volume, volume);
   MP3player.setMonoMode(monoMode);
 }
+
+void setTrackToPlay(){
+      int bankPot = analogRead(A2);
+      Serial.print("Bank pot: " );
+      Serial.println(bankPot);      
+      bank = map(bankPot, 0, 1023, 9, 0);
+      Serial.print("Bank: " );
+      Serial.println(bank);
+      
+      
+      if (digitalRead(RANDOMSWITCH) == HIGH){
+      int val = analogRead(A3);
+      val = map(val, 0, 1023, 1, noOfSamples);
+      Serial.print("Sample no: " );
+      Serial.println(val);
+      Serial.print("bank*10: " );
+      int tempBank = (bank*10);
+      Serial.println(tempBank);
+      trackToPlay = (val+(bank*10));
+      Serial.print("Track to play not random: " );
+      Serial.println(trackToPlay);
+      
+      }
+      else {
+      trackToPlay = (random(1, noOfSamples)+(bank*10));
+      Serial.print("Random track to play: " );
+      Serial.println(trackToPlay);
+
+      
+      }
+}
+
+void playTrack(){
+if (MP3player.isPlaying())
+        MP3player.stopTrack();
+      
+      /* Use the playTrack function to play a numbered track: */
+      uint8_t result = MP3player.playTrack(trackToPlay);
+      // An alternative here would be to use the
+      //  playMP3(fileName) function, as long as you mapped
+      //  the file names to trigger pins.
+        if (result == 0)  // playTrack() returns 0 on success
+      {
+        Serial.print("Playing track: " );
+        Serial.println(trackToPlay);
+      }
+      else // Otherwise there's an error, check the code
+      {
+        Serial.print("Could not play track: " );
+        Serial.println(trackToPlay);
+        setTrackToPlay();
+        playTrack();
+      }
+      }
