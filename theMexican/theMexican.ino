@@ -46,7 +46,7 @@ const uint16_t monoMode = 1;  // Mono setting 0=off, 3=max
 int TRIGGERSWITCH = A0;
 int RANDOMSWITCH = A4;
 int STOPPIN = A5; // This pin triggers a track stop.
-int noOfSamples = 10;
+int noOfSamples = 9;
 int trackToPlay = 0;
 int currentVol = 0;
 int bank = 0;
@@ -145,14 +145,14 @@ void setTrackToPlay(){
       int bankPot = analogRead(A2);
       Serial.print("Bank pot: " );
       Serial.println(bankPot);      
-      bank = map(bankPot, 0, 1023, 9, 0);
+      bank = map(bankPot, 0, 1023, 6, 0);
       Serial.print("Bank: " );
       Serial.println(bank);
       
       
       if (digitalRead(RANDOMSWITCH) == HIGH){
       int val = analogRead(A3);
-      val = map(val, 0, 1023, 1, noOfSamples);
+      val = map(val, 0, 1023, noOfSamples, 0);
       Serial.print("Sample no: " );
       Serial.println(val);
       Serial.print("bank*10: " );
@@ -177,6 +177,7 @@ if (MP3player.isPlaying())
         MP3player.stopTrack();
       
       /* Use the playTrack function to play a numbered track: */
+      delay(100);
       uint8_t result = MP3player.playTrack(trackToPlay);
       // An alternative here would be to use the
       //  playMP3(fileName) function, as long as you mapped
