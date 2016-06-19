@@ -164,7 +164,7 @@ void setTrackToPlay(){
       
       }
       else {
-      trackToPlay = (random(1, noOfSamples)+(bank*10));
+      trackToPlay = (random(0, noOfSamples)+(bank*10));
       Serial.print("Random track to play: " );
       Serial.println(trackToPlay);
 
